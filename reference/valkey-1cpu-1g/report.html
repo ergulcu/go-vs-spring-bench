@@ -1,0 +1,526 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Go vs Spring Boot Performans Karşılaştırması (Valkey)</title><style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1b1f24;--muted:#5d6670;--line:#e3e6ea;--go:#0a8fb3;--sp:#5a9e2f;--acc:#0b57d0}
+@media (prefers-color-scheme:dark){:root{--bg:#14171a;--card:#1c2024;--fg:#e8eaed;--muted:#9aa3ad;--line:#2d3339;--go:#38b6d8;--sp:#86c85a;--acc:#8ab4f8}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:1.9rem;line-height:1.25;margin:.2em 0 .1em}h2{font-size:1.3rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.05rem;margin:1.6em 0 .4em}p{margin:.6em 0}.muted{color:var(--muted)}
+.sub{color:var(--muted);margin:.2em 0 1.2em}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card .k{color:var(--muted);font-size:.82rem}.card .v{font-size:1.5rem;font-weight:650;margin-top:2px}
+.card .d{font-size:.85rem;color:var(--muted)}.go{color:var(--go)}.sp{color:var(--sp)}
+ul.find{padding-left:1.2em}ul.find li{margin:.45em 0}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:color-mix(in srgb,var(--card) 92%,var(--fg));font-weight:600}tr:last-child td{border-bottom:0}.num{text-align:right;font-variant-numeric:tabular-nums}
+.chart{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px;margin:12px 0;overflow-x:auto}.chart svg{max-width:100%;height:auto;display:block}
+.note{background:color-mix(in srgb,var(--acc) 9%,var(--card));border:1px solid color-mix(in srgb,var(--acc) 30%,var(--line));border-radius:10px;padding:10px 14px;font-size:.92rem}
+.warn{background:color-mix(in srgb,#e8a600 14%,var(--card));border-color:#e8a60066}
+code,pre{font-family:Consolas,"Cascadia Mono",monospace;font-size:.88rem}pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto}
+code{background:color-mix(in srgb,var(--card) 88%,var(--fg));padding:1px 5px;border-radius:5px}pre code{background:none;padding:0}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:baseline}
+footer{margin-top:3em;color:var(--muted);font-size:.85rem}
+</style></head><body><div class="wrap">
+<h1>Go vs Spring Boot: Performans Karşılaştırması (Valkey)</h1>
+<p class="sub">Aynı 13 endpoint, aynı Valkey, aynı Docker kaynak limitleri (1 CPU / 1 GiB). Rapor tarihi: 2026-11-23. 3 tur ortancası.</p>
+
+<div class="cards"><div class=card><div class=k>Throughput farkı (DB'siz /cpu)</div><div class=v>1,30x</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Throughput farkı (basit okuma /items/{id})</div><div class=v>1,93x</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Ortalama cevap süresi (DB'siz /cpu)</div><div class=v><span class=go>135,4</span> / <span class=sp>175,2</span> ms</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Ortalama cevap süresi (basit okuma /items/{id})</div><div class=v><span class=go>7,8</span> / <span class=sp>15,2</span> ms</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Ortalama bellek (yük altında)</div><div class=v><span class=go>19</span> / <span class=sp>660</span> MiB</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Soğuk başlangıç</div><div class=v><span class=go>0,6</span> / <span class=sp>6,9</span> sn</div><div class=d>Go / Spring</div></div><div class=card><div class=k>İmaj boyutu</div><div class=v><span class=go>5</span> / <span class=sp>146</span> MB</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Temiz build süresi</div><div class=v><span class=go>24</span> / <span class=sp>128</span> sn</div><div class=d>Go / Spring</div></div><div class=card><div class=k>Artımlı build süresi</div><div class=v><span class=go>20</span> / <span class=sp>7</span> sn</div><div class=d>Go / Spring</div></div></div>
+
+<h2>Özet</h2>
+<ul class="find"><li><b>Throughput:</b> Go, 13 endpoint'in 12 tanesinde Spring'den %10'dan fazla hızlı. En büyük fark <b>GET /factorial?n=1000</b> (4,23x: 5.534 vs 1.309 rps), en küçük fark <b>GET /reports/sales</b> (1,00x).</li><li><b>Eşit çıkanlar:</b> GET /reports/sales - burada darboğaz uygulama değil Valkey; iki dil de veri deposunu bekliyor.</li><li><b>Bellek:</b> yük altında ortalama Go <b>19 MiB</b>, Spring Boot <b>660 MiB</b> (~35x). Boşta: 2 MiB vs 138 MiB.</li><li><b>Başlangıç:</b> Go 0,6 sn, Spring Boot 6,9 sn (konteyner başlat → /health 200). İlk istek: 2 ms vs 81 ms.</li><li><b>Gecikme kuyruğu:</b> p99/p50 oranı (DB'siz/çok ağır olmayan endpoint'lerde ortalama) Go'da ~13,8x, Spring'de ~32,4x: Spring'in tipik gecikmesi düşük kalsa da en yavaş %1-5'lik dilim belirgin uzuyor.</li><li><b>İmaj boyutu:</b> Go 5 MB, Spring Boot 146 MB.</li></ul>
+
+<h2>Test ortamı</h2><div class=tw><table><thead><tr><th>Bileşen</th><th>Ayrıntı</th></tr></thead><tbody><tr><td>Donanım</td><td>Docker sunucusu: Docker Desktop (containerized) (linux/x86_64), Docker 29.5.2; Docker'ın görebildiği kaynak: 16 CPU, 7.4 GiB RAM</td></tr><tr><td>Docker</td><td>Docker version 29.10.0, build fdd4b8e; Docker sunucusu: Docker Desktop (containerized) (linux/x86_64), Docker 29.5.2; Docker'ın görebildiği kaynak: 16 CPU, 7.4 GiB RAM</td></tr><tr><td>Güç durumu (test başında)</td><td>şebeke bağlı, performans modu (kullanıcı beyanı)</td></tr><tr><td>Uygulama limitleri</td><td>Her API konteyneri: <b>1 CPU, 1 GiB RAM</b> (aynı anda yalnızca biri çalışır)</td></tr><tr><td>Veri deposu</td><td>Valkey server v=8.1.12 sha=00000000:1 malloc=jemalloc-5.3.0 bits=64 build=5bfc8279dd00e95e; 8 CPU, 4 GiB, bellek içi, kalıcılık kapalı (save "", appendonly no), io-threads 4; komutlar tek iş parçacığında yürür, yazmalar Lua betiğiyle tek turda; 100.000 ürün + 20 mağaza + 40.000 satış kaydı (PostgreSQL senaryosuyla birebir aynı deterministik veri)</td></tr><tr><td>Senaryo</td><td>Valkey · 1 CPU / 1 GiB</td></tr><tr><td>Go</td><td>go version go1.27.4 linux/amd64; net/http (standart) + go-redis v9 (havuz 20); scratch imajı</td></tr><tr><td>Java / Spring Boot</td><td>openjdk version "25.0.5.1" 2026-11-17 LTS; Spring Boot 4.2.0, Spring MVC (Tomcat) + Jedis (bloklayan istemci, havuz 20); -XX:MaxRAMPercentage=50</td></tr><tr><td>Yük aracı</td><td>k6 v2.4.0 (commit/dd9395906d, go1.27.3, linux/amd64); 64 eşzamanlı sanal kullanıcı, bekleme yok</td></tr></tbody></table></div>
+
+<h2>Metodoloji</h2>
+<ul class="find">
+<li><b>Her tur taze başlar:</b> Valkey <code>FLUSHALL</code> ile boşaltılıp aynı tohum veri yeniden yüklenir, API konteyneri sıfırdan (soğuk) başlatılır.</li>
+<li><b>Isınma:</b> 180 sn karışık yük (JIT ve bağlantı havuzu ısınsın); ölçüme dahil değil. Isınmanın eklediği ya da değiştirdiği her şey silinir, depo her iki yığın için de aynı tohum veriyle yeniden yüklenir.</li>
+<li><b>Ölçüm:</b> her endpoint 20 sn, 64 eşzamanlı sanal kullanıcı, kapalı döngü (istek biter bitmez yenisi). Sırayla 13 endpoint.</li>
+<li><b>Adillik:</b> aynı Lua betikleri ve komutlar, aynı bağlantı havuzu boyutu (20), aynı kaynak limiti, aynı veri; yığınlar aynı anda değil sırayla koşar, tur sırası dönüşümlü (Go→Spring, Spring→Go, Go→Spring).</li>
+<li><b>Ölçülenler:</b> throughput (rps), gecikme (p50/p95/p99), uygulama ve veritabanı CPU'su, uygulama belleği (docker stats, ~1 Hz), hata oranı (2xx dışı), başlangıç süresi, ilk istek gecikmesi, imaj boyutu.</li>
+<li><b>Tur sonucu:</b> 3 turun ortancası; en düşük–en yüksek aralık "Hata oranı ve tur farkı" tablosunda.</li>
+</ul>
+
+<h2>Endpoint'ler</h2><div class=tw><table><thead><tr><th>#</th><th>Endpoint</th><th>Ne yapar</th><th>İş yükü (Valkey)</th></tr></thead><tbody><tr><td>1</td><td>GET /health</td><td>Canlılık (yalnızca uygulama, veri deposu yok)</td><td>Sabit yanıt: HTTP çerçevesinin ham maliyeti</td></tr><tr><td>2</td><td>GET /items?after=&limit=</td><td>Sayfalı liste (50 kayıt)</td><td>ZRANGEBYSCORE (sorted set, skor = id) + 50 HMGET (tek pipeline)</td></tr><tr><td>3</td><td>GET /items/{id}</td><td>Tek kayıt okuma</td><td>HMGET (hash)</td></tr><tr><td>4</td><td>POST /items</td><td>Kayıt ekleme</td><td>Lua: INCR + HSET + 2 × ZADD (tek tur)</td></tr><tr><td>5</td><td>PUT /items/{id}</td><td>Kayıt güncelleme</td><td>Lua: HSET + HMGET</td></tr><tr><td>6</td><td>DELETE /items/{id}</td><td>Kayıt silme</td><td>Lua: HGET + DEL + 2 × ZREM (ayrılmış 2.000.000 kayıtlık aralıkta)</td></tr><tr><td>7</td><td>GET /items/search?q=</td><td>Önek araması</td><td>ZRANGEBYLEX (üye: küçük harfli ad + kimlik) + HMGET pipeline</td></tr><tr><td>8</td><td>POST /orders</td><td>Sipariş oluşturma</td><td>Lua: stok kontrolü + düşme + sipariş kaydı (atomik, tek tur)</td></tr><tr><td>9</td><td>GET /cpu?n=50000</td><td>Saf CPU işi (veri deposu yok)</td><td>50.000'e kadar asal sayı sayma (deneme bölmesi)</td></tr><tr><td>10</td><td>GET /stores/{id}/sales-report</td><td>Tek mağazanın günlük + aylık satış raporu</td><td>LRANGE ile mağazanın ~2.000 satış kaydı çekilir; günlük/aylık toplamlar, en iyi gün, aylık büyüme <b>uygulama kodunda</b> hesaplanır</td></tr><tr><td>11</td><td>GET /reports/sales</td><td>Tüm mağazalar, mağaza mağaza rapor (hesap Valkey içinde)</td><td>Lua betiği 20 mağazanın 40.000 kaydını sunucuda gün/ay toplamlarına çevirir (SQL <code>GROUP BY</code>'ın karşılığı); uygulama hazır toplamları rapora dizer</td></tr><tr><td>12</td><td>POST /base64</td><td>İsteğin gövdesini Base64'e çevirir (veri deposu yok)</td><td>~2 KB'lık gövde okunur, standart Base64'e kodlanır ve JSON olarak döner</td></tr><tr><td>13</td><td>GET /factorial?n=1000</td><td>1000! hesaplar (veri deposu yok)</td><td>Büyük tamsayıyla <b>sıralı çarpma</b>, ardından ondalık metne çevirme</td></tr></tbody></table></div><h3>Bu senaryonun PostgreSQL senaryosundan farkları</h3><ul class='find'><li><b><code>/stats</code> yok:</b> SQL <code>GROUP BY</code>'ın bellek içi depoda doğal bir karşılığı yok; yapay bir karşılık yazılmadı.</li><li><b>Yazmalar Lua betiğiyle tek turda:</b> ekleme, güncelleme, silme ve sipariş tek atomik komuttur (PostgreSQL'deki transaction'ın karşılığı). Valkey komutları tek iş parçacığında yürüttüğü için ağır betikler diğer isteklerin önüne geçer.</li><li><b>İstemciler:</b> Go: go-redis (havuz 20, pipeline). Spring: Jedis (bloklayan istemci, havuz 20, pipeline). Her dilin yaygın istemcisi seçildi; başka istemci (ör. Lettuce) sonucu değiştirebilir.</li><li><b>Satış raporları:</b> ham satırlar liste olarak saklanır (<code>epoch|adet|tutar</code>). Tek mağaza raporunda toplamlar <b>uygulama kodunda</b> hesaplanır; <code>/reports/sales</code>'te ise <b>Valkey içinde</b> bir Lua betiğiyle. Valkey komutları tek iş parçacığında yürüttüğünden bu betik çalışırken sunucu başka isteğe bakmaz: bu endpoint'te veri deposu darboğaza dönüşebilir (PostgreSQL'deki <code>/stats</code> gibi).</li><li><b>Arama:</b> <code>ZRANGEBYLEX</code> ile önek araması, en fazla 20 sonuç, kimliğe göre sıralı. 4 karakterlik önekte PostgreSQL ile aynı sonucu verir (doğrulandı).</li><li><b>Aynı çıktı:</b> iki uygulamanın iki veri deposundaki JSON çıktıları 19 örnek istekte birebir aynıdır (tek kayıt, liste, arama, 404/409, ekleme, güncelleme, silme, sipariş, satış raporları).</li><li><b>Kalıcılık kapalı</b> (<code>save ""</code>, <code>appendonly no</code>): yalnızca benchmark içindir; üretimde veri kaybı riski taşır.</li></ul>
+
+<h2>Throughput</h2>
+<div class="chart"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>Throughput (istek/sn, yüksek iyi)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>64 eşzamanlı kullanıcı, 1 CPU / 1 GiB limitli uygulama, tur ortancası</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='94' font-size='11' fill='#333333'>13.766 rps · ort. 4,5 ms</text>
+<rect x='150' y='101' width='385.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='541.3' y='113' font-size='11' fill='#333333'>9.471 rps · ort. 6,6 ms</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='142' font-size='11' fill='#333333'>3.004 rps · ort. 21,2 ms</text>
+<rect x='150' y='149' width='359.4' height='15' rx='2' fill='#5a9e2f'/>
+<text x='515.4' y='161' font-size='11' fill='#333333'>1.928 rps · ort. 33,0 ms</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='190' font-size='11' fill='#333333'>8.022 rps · ort. 7,8 ms</text>
+<rect x='150' y='197' width='290.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='446.2' y='209' font-size='11' fill='#333333'>4.158 rps · ort. 15,2 ms</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='238' font-size='11' fill='#333333'>6.126 rps · ort. 10,3 ms</text>
+<rect x='150' y='245' width='307.6' height='15' rx='2' fill='#5a9e2f'/>
+<text x='463.6' y='257' font-size='11' fill='#333333'>3.365 rps · ort. 18,8 ms</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='286' font-size='11' fill='#333333'>471 rps · ort. 135,4 ms</text>
+<rect x='150' y='293' width='431.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='587.3' y='305' font-size='11' fill='#333333'>362 rps · ort. 175,2 ms</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='334' font-size='11' fill='#333333'>7.617 rps · ort. 8,3 ms</text>
+<rect x='150' y='341' width='283.6' height='15' rx='2' fill='#5a9e2f'/>
+<text x='439.6' y='353' font-size='11' fill='#333333'>3.857 rps · ort. 16,4 ms</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='382' font-size='11' fill='#333333'>7.544 rps · ort. 8,3 ms</text>
+<rect x='150' y='389' width='269.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='425.9' y='401' font-size='11' fill='#333333'>3.637 rps · ort. 17,4 ms</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='430' font-size='11' fill='#333333'>7.514 rps · ort. 8,4 ms</text>
+<rect x='150' y='437' width='273.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='429.9' y='449' font-size='11' fill='#333333'>3.676 rps · ort. 17,2 ms</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='478' font-size='11' fill='#333333'>7.960 rps · ort. 7,8 ms</text>
+<rect x='150' y='485' width='203.1' height='15' rx='2' fill='#5a9e2f'/>
+<text x='359.1' y='497' font-size='11' fill='#333333'>2.887 rps · ort. 21,8 ms</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='526' font-size='11' fill='#333333'>807 rps · ort. 79,1 ms</text>
+<rect x='150' y='533' width='403.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='559.9' y='545' font-size='11' fill='#333333'>582 rps · ort. 109,4 ms</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='574' font-size='11' fill='#333333'>9 rps · ort. 6.374,3 ms</text>
+<rect x='150' y='581' width='557.8' height='15' rx='2' fill='#5a9e2f'/>
+<text x='713.8' y='593' font-size='11' fill='#333333'>9 rps · ort. 6.373,4 ms</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='622' font-size='11' fill='#333333'>9.327 rps · ort. 6,7 ms</text>
+<rect x='150' y='629' width='408.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='564.5' y='641' font-size='11' fill='#333333'>6.804 rps · ort. 9,2 ms</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='670' font-size='11' fill='#333333'>5.534 rps · ort. 11,5 ms</text>
+<rect x='150' y='677' width='132.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='288.5' y='689' font-size='11' fill='#333333'>1.309 rps · ort. 48,7 ms</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Her satırda en uzun çubuk %100 genişliktir; gerçek değer çubuğun yanında.</text>
+</svg></div>
+<h2>Gecikme</h2>
+<div class="chart"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>p99 gecikme (ms, düşük iyi)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Aynı yük altında istek gecikmesinin 99. yüzdeliği</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='380.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='536.7' y='94' font-size='11' fill='#333333'>54,8 ms · ort. 4,5 ms</text>
+<rect x='150' y='101' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='113' font-size='11' fill='#333333'>80,6 ms · ort. 6,6 ms</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='378.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='534.2' y='142' font-size='11' fill='#333333'>72,1 ms · ort. 21,2 ms</text>
+<rect x='150' y='149' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='161' font-size='11' fill='#333333'>106,8 ms · ort. 33,0 ms</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='355.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='511.1' y='190' font-size='11' fill='#333333'>57,7 ms · ort. 7,8 ms</text>
+<rect x='150' y='197' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='209' font-size='11' fill='#333333'>91,0 ms · ort. 15,2 ms</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='356.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='512.4' y='238' font-size='11' fill='#333333'>61,1 ms · ort. 10,3 ms</text>
+<rect x='150' y='245' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='257' font-size='11' fill='#333333'>95,9 ms · ort. 18,8 ms</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='420.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='576.7' y='286' font-size='11' fill='#333333'>300,1 ms · ort. 135,4 ms</text>
+<rect x='150' y='293' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='305' font-size='11' fill='#333333'>399,4 ms · ort. 175,2 ms</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='348.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='504.4' y='334' font-size='11' fill='#333333'>57,5 ms · ort. 8,3 ms</text>
+<rect x='150' y='341' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='353' font-size='11' fill='#333333'>92,5 ms · ort. 16,4 ms</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='343.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='499.6' y='382' font-size='11' fill='#333333'>57,0 ms · ort. 8,3 ms</text>
+<rect x='150' y='389' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='401' font-size='11' fill='#333333'>92,9 ms · ort. 17,4 ms</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='345.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='501.1' y='430' font-size='11' fill='#333333'>57,6 ms · ort. 8,4 ms</text>
+<rect x='150' y='437' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='449' font-size='11' fill='#333333'>93,4 ms · ort. 17,2 ms</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='312.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='468.4' y='478' font-size='11' fill='#333333'>55,3 ms · ort. 7,8 ms</text>
+<rect x='150' y='485' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='497' font-size='11' fill='#333333'>99,0 ms · ort. 21,8 ms</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='195.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='351.5' y='526' font-size='11' fill='#333333'>162,6 ms · ort. 79,1 ms</text>
+<rect x='150' y='533' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='545' font-size='11' fill='#333333'>465,9 ms · ort. 109,4 ms</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='400.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='556.8' y='574' font-size='11' fill='#333333'>9.323,4 ms · ort. 6.374,3 ms</text>
+<rect x='150' y='581' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='593' font-size='11' fill='#333333'>13.026,9 ms · ort. 6.373,4 ms</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='403.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='559.2' y='622' font-size='11' fill='#333333'>59,9 ms · ort. 6,7 ms</text>
+<rect x='150' y='629' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='641' font-size='11' fill='#333333'>83,2 ms · ort. 9,2 ms</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='352.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='508.7' y='670' font-size='11' fill='#333333'>65,6 ms · ort. 11,5 ms</text>
+<rect x='150' y='677' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='689' font-size='11' fill='#333333'>104,1 ms · ort. 48,7 ms</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Her satırda en uzun çubuk %100 genişliktir; gerçek değer çubuğun yanında.</text>
+</svg></div>
+<h3>Throughput ve gecikme tablosu (ms)</h3><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go rps</th><th class=num>Spring rps</th><th class=num>Go / Spring</th><th class=num>Go p50</th><th class=num>Spring p50</th><th class=num>Go p95</th><th class=num>Spring p95</th><th class=num>Go p99</th><th class=num>Spring p99</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>13.766</td><td class=num>9.471</td><td class=num>1,45x</td><td class=num>2,0</td><td class=num>1,3</td><td class=num>19,7</td><td class=num>75,3</td><td class=num>54,8</td><td class=num>80,6</td></tr><tr><td>GET /items</td><td class=num>3.004</td><td class=num>1.928</td><td class=num>1,56x</td><td class=num>11,1</td><td class=num>7,9</td><td class=num>64,3</td><td class=num>95,6</td><td class=num>72,1</td><td class=num>106,8</td></tr><tr><td>GET /items/{id}</td><td class=num>8.022</td><td class=num>4.158</td><td class=num>1,93x</td><td class=num>3,8</td><td class=num>2,6</td><td class=num>42,4</td><td class=num>84,7</td><td class=num>57,7</td><td class=num>91,0</td></tr><tr><td>GET /items/search</td><td class=num>6.126</td><td class=num>3.365</td><td class=num>1,82x</td><td class=num>5,1</td><td class=num>2,9</td><td class=num>54,2</td><td class=num>88,5</td><td class=num>61,1</td><td class=num>95,9</td></tr><tr><td>GET /cpu</td><td class=num>471</td><td class=num>362</td><td class=num>1,30x</td><td class=num>118,7</td><td class=num>195,5</td><td class=num>211,8</td><td class=num>300,3</td><td class=num>300,1</td><td class=num>399,4</td></tr><tr><td>POST /orders</td><td class=num>7.617</td><td class=num>3.857</td><td class=num>1,97x</td><td class=num>4,1</td><td class=num>2,6</td><td class=num>48,8</td><td class=num>86,0</td><td class=num>57,5</td><td class=num>92,5</td></tr><tr><td>POST /items</td><td class=num>7.544</td><td class=num>3.637</td><td class=num>2,07x</td><td class=num>4,1</td><td class=num>3,1</td><td class=num>50,1</td><td class=num>86,2</td><td class=num>57,0</td><td class=num>92,9</td></tr><tr><td>PUT /items/{id}</td><td class=num>7.514</td><td class=num>3.676</td><td class=num>2,04x</td><td class=num>4,1</td><td class=num>2,9</td><td class=num>46,0</td><td class=num>85,9</td><td class=num>57,6</td><td class=num>93,4</td></tr><tr><td>DELETE /items/{id}</td><td class=num>7.960</td><td class=num>2.887</td><td class=num>2,76x</td><td class=num>3,8</td><td class=num>3,0</td><td class=num>41,7</td><td class=num>89,2</td><td class=num>55,3</td><td class=num>99,0</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>807</td><td class=num>582</td><td class=num>1,39x</td><td class=num>86,7</td><td class=num>96,5</td><td class=num>105,1</td><td class=num>298,0</td><td class=num>162,6</td><td class=num>465,9</td></tr><tr><td>GET /reports/sales</td><td class=num>9</td><td class=num>9</td><td class=num>1,00x</td><td class=num>6.571,3</td><td class=num>6.699,0</td><td class=num>8.375,6</td><td class=num>9.910,1</td><td class=num>9.323,4</td><td class=num>13.026,9</td></tr><tr><td>POST /base64</td><td class=num>9.327</td><td class=num>6.804</td><td class=num>1,37x</td><td class=num>3,1</td><td class=num>1,8</td><td class=num>45,9</td><td class=num>78,6</td><td class=num>59,9</td><td class=num>83,2</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>5.534</td><td class=num>1.309</td><td class=num>4,23x</td><td class=num>5,5</td><td class=num>11,8</td><td class=num>57,9</td><td class=num>99,1</td><td class=num>65,6</td><td class=num>104,1</td></tr></tbody></table></div>
+<h2>Isınmasız tur (60 sn faz)</h2><p>Normal turlardaki ısınma yükü (JIT ve bağlantı havuzu için) bu turda <b>yok</b>: konteyner taze başlar ve fazlar hemen ölçülür. Her endpoint daha uzun (60 sn) ölçülür. Tek tur olduğundan sayılar ortanca değil tek ölçümdür.</p><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go rps</th><th class=num>Spring rps</th><th class=num>Go / Spring</th><th class=num>Go ısınmasız / ısınmalı</th><th class=num>Spring ısınmasız / ısınmalı</th><th class=num>Go p99 ms</th><th class=num>Spring p99 ms</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>10.853</td><td class=num>3.608</td><td class=num>3,01x</td><td class=num>0,79x</td><td class=num>0,38x</td><td class=num>58,1</td><td class=num>97,6</td></tr><tr><td>GET /items</td><td class=num>2.143</td><td class=num>1.177</td><td class=num>1,82x</td><td class=num>0,71x</td><td class=num>0,61x</td><td class=num>97,5</td><td class=num>206,3</td></tr><tr><td>GET /items/{id}</td><td class=num>6.682</td><td class=num>3.101</td><td class=num>2,15x</td><td class=num>0,83x</td><td class=num>0,75x</td><td class=num>59,8</td><td class=num>98,3</td></tr><tr><td>GET /items/search</td><td class=num>5.220</td><td class=num>2.556</td><td class=num>2,04x</td><td class=num>0,85x</td><td class=num>0,76x</td><td class=num>62,6</td><td class=num>103,6</td></tr><tr><td>GET /cpu</td><td class=num>453</td><td class=num>355</td><td class=num>1,28x</td><td class=num>0,96x</td><td class=num>0,98x</td><td class=num>307,1</td><td class=num>500,8</td></tr><tr><td>POST /orders</td><td class=num>7.395</td><td class=num>2.914</td><td class=num>2,54x</td><td class=num>0,97x</td><td class=num>0,76x</td><td class=num>57,1</td><td class=num>98,4</td></tr><tr><td>POST /items</td><td class=num>6.891</td><td class=num>2.835</td><td class=num>2,43x</td><td class=num>0,91x</td><td class=num>0,78x</td><td class=num>57,3</td><td class=num>99,8</td></tr><tr><td>PUT /items/{id}</td><td class=num>6.447</td><td class=num>3.105</td><td class=num>2,08x</td><td class=num>0,86x</td><td class=num>0,84x</td><td class=num>58,7</td><td class=num>95,3</td></tr><tr><td>DELETE /items/{id}</td><td class=num>6.332</td><td class=num>3.894</td><td class=num>1,63x</td><td class=num>0,80x</td><td class=num>1,35x</td><td class=num>57,8</td><td class=num>91,6</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>766</td><td class=num>504</td><td class=num>1,52x</td><td class=num>0,95x</td><td class=num>0,87x</td><td class=num>168,4</td><td class=num>610,6</td></tr><tr><td>GET /reports/sales</td><td class=num>9</td><td class=num>9</td><td class=num>1,00x</td><td class=num>0,96x</td><td class=num>0,96x</td><td class=num>10.140,9</td><td class=num>12.749,4</td></tr><tr><td>POST /base64</td><td class=num>9.166</td><td class=num>6.640</td><td class=num>1,38x</td><td class=num>0,98x</td><td class=num>0,98x</td><td class=num>59,5</td><td class=num>83,4</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>5.186</td><td class=num>1.096</td><td class=num>4,73x</td><td class=num>0,94x</td><td class=num>0,84x</td><td class=num>67,0</td><td class=num>194,7</td></tr></tbody></table></div><p class='muted'>“Isınmasız / ısınmalı” 1,00x'e yakınsa o endpoint ısınmadan etkilenmiyor demektir. Fazlar sırayla koştuğundan JVM, önceki fazlarla zaten ısınır: ilk fazlar (health, list, get) en soğuk durumda ölçülür, sonrakiler daha ısınmış bir JVM'de. Bu yüzden oranlar yukarıdan aşağı yükselebilir; ısınmanın etkisini en temiz ilk satırlar gösterir. Go için fark beklenmez (JIT yok).</p>
+
+<h2>Kaynak kullanımı</h2>
+<div class="chart"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>Uygulama CPU kullanımı (% - 100 = limit dolu)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Yük süresince docker stats ortalaması</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='554.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='710.7' y='94' font-size='11' fill='#333333'>%96</text>
+<rect x='150' y='101' width='547.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='703.3' y='113' font-size='11' fill='#333333'>%95</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='544.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='700.1' y='142' font-size='11' fill='#333333'>%95</text>
+<rect x='150' y='149' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='161' font-size='11' fill='#333333'>%97</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='545.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='701.2' y='190' font-size='11' fill='#333333'>%95</text>
+<rect x='150' y='197' width='552.7' height='15' rx='2' fill='#5a9e2f'/>
+<text x='708.7' y='209' font-size='11' fill='#333333'>%96</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='540.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='696.4' y='238' font-size='11' fill='#333333'>%94</text>
+<rect x='150' y='245' width='552.6' height='15' rx='2' fill='#5a9e2f'/>
+<text x='708.6' y='257' font-size='11' fill='#333333'>%96</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='541.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='697.3' y='286' font-size='11' fill='#333333'>%94</text>
+<rect x='150' y='293' width='539.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='695.9' y='305' font-size='11' fill='#333333'>%94</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='541.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='697.0' y='334' font-size='11' fill='#333333'>%94</text>
+<rect x='150' y='341' width='551.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='707.2' y='353' font-size='11' fill='#333333'>%96</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='547.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='703.9' y='382' font-size='11' fill='#333333'>%95</text>
+<rect x='150' y='389' width='551.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='707.3' y='401' font-size='11' fill='#333333'>%96</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='543.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='699.9' y='430' font-size='11' fill='#333333'>%95</text>
+<rect x='150' y='437' width='547.8' height='15' rx='2' fill='#5a9e2f'/>
+<text x='703.8' y='449' font-size='11' fill='#333333'>%95</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='534.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='690.9' y='478' font-size='11' fill='#333333'>%93</text>
+<rect x='150' y='485' width='554.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='710.3' y='497' font-size='11' fill='#333333'>%96</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='542.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='698.0' y='526' font-size='11' fill='#333333'>%94</text>
+<rect x='150' y='533' width='548.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='704.2' y='545' font-size='11' fill='#333333'>%95</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='38.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='194.9' y='574' font-size='11' fill='#333333'>%7</text>
+<rect x='150' y='581' width='51.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='207.9' y='593' font-size='11' fill='#333333'>%9</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='548.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='704.0' y='622' font-size='11' fill='#333333'>%95</text>
+<rect x='150' y='629' width='548.1' height='15' rx='2' fill='#5a9e2f'/>
+<text x='704.1' y='641' font-size='11' fill='#333333'>%95</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='544.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='700.6' y='670' font-size='11' fill='#333333'>%95</text>
+<rect x='150' y='677' width='543.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='699.2' y='689' font-size='11' fill='#333333'>%94</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Tüm satırlar aynı ölçekte.</text>
+</svg></div>
+<div class="chart"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>Uygulama bellek kullanımı (MiB, yük altında ortalama)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Docker konteyner belleği (RSS + önbellek), limit 1024 MiB</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='12.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='168.1' y='94' font-size='11' fill='#333333'>15 MiB</text>
+<rect x='150' y='101' width='536.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.0' y='113' font-size='11' fill='#333333'>653 MiB</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='14.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='170.9' y='142' font-size='11' fill='#333333'>18 MiB</text>
+<rect x='150' y='149' width='535.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='691.9' y='161' font-size='11' fill='#333333'>653 MiB</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='13.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.2' y='190' font-size='11' fill='#333333'>16 MiB</text>
+<rect x='150' y='197' width='536.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.2' y='209' font-size='11' fill='#333333'>654 MiB</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='13.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.1' y='238' font-size='11' fill='#333333'>16 MiB</text>
+<rect x='150' y='245' width='536.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.2' y='257' font-size='11' fill='#333333'>654 MiB</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='13.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.1' y='286' font-size='11' fill='#333333'>16 MiB</text>
+<rect x='150' y='293' width='536.4' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.4' y='305' font-size='11' fill='#333333'>654 MiB</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='13.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.1' y='334' font-size='11' fill='#333333'>16 MiB</text>
+<rect x='150' y='341' width='536.4' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.4' y='353' font-size='11' fill='#333333'>654 MiB</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='13.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.4' y='382' font-size='11' fill='#333333'>16 MiB</text>
+<rect x='150' y='389' width='536.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.3' y='401' font-size='11' fill='#333333'>654 MiB</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='13.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.5' y='430' font-size='11' fill='#333333'>16 MiB</text>
+<rect x='150' y='437' width='536.8' height='15' rx='2' fill='#5a9e2f'/>
+<text x='692.8' y='449' font-size='11' fill='#333333'>654 MiB</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='13.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.8' y='478' font-size='11' fill='#333333'>17 MiB</text>
+<rect x='150' y='485' width='538.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='694.9' y='497' font-size='11' fill='#333333'>657 MiB</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='15.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='171.6' y='526' font-size='11' fill='#333333'>19 MiB</text>
+<rect x='150' y='533' width='538.6' height='15' rx='2' fill='#5a9e2f'/>
+<text x='694.6' y='545' font-size='11' fill='#333333'>656 MiB</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='35.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='191.5' y='574' font-size='11' fill='#333333'>43 MiB</text>
+<rect x='150' y='581' width='555.7' height='15' rx='2' fill='#5a9e2f'/>
+<text x='711.7' y='593' font-size='11' fill='#333333'>677 MiB</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='15.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='171.1' y='622' font-size='11' fill='#333333'>18 MiB</text>
+<rect x='150' y='629' width='559.9' height='15' rx='2' fill='#5a9e2f'/>
+<text x='715.9' y='641' font-size='11' fill='#333333'>682 MiB</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='13.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='169.6' y='670' font-size='11' fill='#333333'>17 MiB</text>
+<rect x='150' y='677' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='689' font-size='11' fill='#333333'>683 MiB</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Tüm satırlar aynı ölçekte.</text>
+</svg></div>
+<h3>CPU ve RAM (yük altında)</h3><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go CPU %</th><th class=num>Spring CPU %</th><th class=num>Go RAM MiB</th><th class=num>Spring RAM MiB</th><th class=num>Go RAM tepe</th><th class=num>Spring RAM tepe</th><th class=num>DB CPU % (Go)</th><th class=num>DB CPU % (Spring)</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>96</td><td class=num>95</td><td class=num>15</td><td class=num>653</td><td class=num>16</td><td class=num>654</td><td class=num>2</td><td class=num>2</td></tr><tr><td>GET /items</td><td class=num>95</td><td class=num>97</td><td class=num>18</td><td class=num>653</td><td class=num>19</td><td class=num>654</td><td class=num>99</td><td class=num>93</td></tr><tr><td>GET /items/{id}</td><td class=num>95</td><td class=num>96</td><td class=num>16</td><td class=num>654</td><td class=num>17</td><td class=num>655</td><td class=num>82</td><td class=num>64</td></tr><tr><td>GET /items/search</td><td class=num>94</td><td class=num>96</td><td class=num>16</td><td class=num>654</td><td class=num>17</td><td class=num>654</td><td class=num>84</td><td class=num>74</td></tr><tr><td>GET /cpu</td><td class=num>94</td><td class=num>94</td><td class=num>16</td><td class=num>654</td><td class=num>17</td><td class=num>655</td><td class=num>1</td><td class=num>1</td></tr><tr><td>POST /orders</td><td class=num>94</td><td class=num>96</td><td class=num>16</td><td class=num>654</td><td class=num>17</td><td class=num>655</td><td class=num>120</td><td class=num>67</td></tr><tr><td>POST /items</td><td class=num>95</td><td class=num>96</td><td class=num>16</td><td class=num>654</td><td class=num>17</td><td class=num>655</td><td class=num>130</td><td class=num>71</td></tr><tr><td>PUT /items/{id}</td><td class=num>95</td><td class=num>95</td><td class=num>16</td><td class=num>654</td><td class=num>18</td><td class=num>655</td><td class=num>109</td><td class=num>64</td></tr><tr><td>DELETE /items/{id}</td><td class=num>93</td><td class=num>96</td><td class=num>17</td><td class=num>657</td><td class=num>18</td><td class=num>658</td><td class=num>133</td><td class=num>56</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>94</td><td class=num>95</td><td class=num>19</td><td class=num>656</td><td class=num>20</td><td class=num>657</td><td class=num>25</td><td class=num>40</td></tr><tr><td>GET /reports/sales</td><td class=num>7</td><td class=num>9</td><td class=num>43</td><td class=num>677</td><td class=num>57</td><td class=num>682</td><td class=num>382</td><td class=num>380</td></tr><tr><td>POST /base64</td><td class=num>95</td><td class=num>95</td><td class=num>18</td><td class=num>682</td><td class=num>34</td><td class=num>683</td><td class=num>2</td><td class=num>2</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>95</td><td class=num>94</td><td class=num>17</td><td class=num>683</td><td class=num>17</td><td class=num>683</td><td class=num>1</td><td class=num>2</td></tr></tbody></table></div>
+<h3>CPU çalışma süresi</h3><div class='chart'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>İstek başına CPU süresi (ms, düşük iyi)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Uygulama konteynerinin harcadığı CPU süresi / tamamlanan istek sayısı</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='387.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='543.6' y='94' font-size='11' fill='#333333'>0,073 ms</text>
+<rect x='150' y='101' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='113' font-size='11' fill='#333333'>0,105 ms</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='358.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='514.5' y='142' font-size='11' fill='#333333'>0,333 ms</text>
+<rect x='150' y='149' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='161' font-size='11' fill='#333333'>0,520 ms</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='289.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='445.3' y='190' font-size='11' fill='#333333'>0,124 ms</text>
+<rect x='150' y='197' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='209' font-size='11' fill='#333333'>0,240 ms</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='308.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='464.6' y='238' font-size='11' fill='#333333'>0,163 ms</text>
+<rect x='150' y='245' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='257' font-size='11' fill='#333333'>0,296 ms</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='431.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='587.6' y='286' font-size='11' fill='#333333'>2,132 ms</text>
+<rect x='150' y='293' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='305' font-size='11' fill='#333333'>2,766 ms</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='285.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='441.5' y='334' font-size='11' fill='#333333'>0,132 ms</text>
+<rect x='150' y='341' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='353' font-size='11' fill='#333333'>0,258 ms</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='271.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='427.3' y='382' font-size='11' fill='#333333'>0,133 ms</text>
+<rect x='150' y='389' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='401' font-size='11' fill='#333333'>0,274 ms</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='274.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='430.9' y='430' font-size='11' fill='#333333'>0,133 ms</text>
+<rect x='150' y='437' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='449' font-size='11' fill='#333333'>0,270 ms</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='197.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='353.3' y='478' font-size='11' fill='#333333'>0,122 ms</text>
+<rect x='150' y='485' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='497' font-size='11' fill='#333333'>0,346 ms</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='404.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='560.8' y='526' font-size='11' fill='#333333'>1,242 ms</text>
+<rect x='150' y='533' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='545' font-size='11' fill='#333333'>1,718 ms</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='440.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='596.0' y='574' font-size='11' fill='#333333'>7,705 ms</text>
+<rect x='150' y='581' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='593' font-size='11' fill='#333333'>9,807 ms</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='410.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='566.5' y='622' font-size='11' fill='#333333'>0,107 ms</text>
+<rect x='150' y='629' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='641' font-size='11' fill='#333333'>0,146 ms</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='133.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='289.1' y='670' font-size='11' fill='#333333'>0,181 ms</text>
+<rect x='150' y='677' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='689' font-size='11' fill='#333333'>0,763 ms</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Her satırda en uzun çubuk %100 genişliktir; gerçek değer çubuğun yanında.</text>
+</svg></div><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go CPU sn</th><th class=num>Spring CPU sn</th><th class=num>Go ms/istek</th><th class=num>Spring ms/istek</th><th class=num>Spring / Go</th><th class=num>Veri deposu CPU sn (Go)</th><th class=num>Veri deposu CPU sn (Spring)</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>20,1</td><td class=num>20,0</td><td class=num>0,073</td><td class=num>0,105</td><td class=num>1,44x</td><td class=num>0,4</td><td class=num>0,3</td></tr><tr><td>GET /items</td><td class=num>20,0</td><td class=num>20,1</td><td class=num>0,333</td><td class=num>0,520</td><td class=num>1,56x</td><td class=num>21,0</td><td class=num>19,3</td></tr><tr><td>GET /items/{id}</td><td class=num>19,9</td><td class=num>20,0</td><td class=num>0,124</td><td class=num>0,240</td><td class=num>1,94x</td><td class=num>17,6</td><td class=num>13,3</td></tr><tr><td>GET /items/search</td><td class=num>20,0</td><td class=num>20,0</td><td class=num>0,163</td><td class=num>0,296</td><td class=num>1,81x</td><td class=num>18,0</td><td class=num>15,3</td></tr><tr><td>GET /cpu</td><td class=num>20,2</td><td class=num>20,3</td><td class=num>2,132</td><td class=num>2,766</td><td class=num>1,30x</td><td class=num>0,3</td><td class=num>0,3</td></tr><tr><td>POST /orders</td><td class=num>20,0</td><td class=num>20,0</td><td class=num>0,132</td><td class=num>0,258</td><td class=num>1,96x</td><td class=num>25,5</td><td class=num>13,8</td></tr><tr><td>POST /items</td><td class=num>20,1</td><td class=num>19,9</td><td class=num>0,133</td><td class=num>0,274</td><td class=num>2,06x</td><td class=num>27,7</td><td class=num>14,7</td></tr><tr><td>PUT /items/{id}</td><td class=num>19,9</td><td class=num>20,0</td><td class=num>0,133</td><td class=num>0,270</td><td class=num>2,04x</td><td class=num>22,9</td><td class=num>13,5</td></tr><tr><td>DELETE /items/{id}</td><td class=num>19,6</td><td class=num>20,1</td><td class=num>0,122</td><td class=num>0,346</td><td class=num>2,84x</td><td class=num>27,7</td><td class=num>12,2</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>20,1</td><td class=num>20,2</td><td class=num>1,242</td><td class=num>1,718</td><td class=num>1,38x</td><td class=num>5,3</td><td class=num>8,6</td></tr><tr><td>GET /reports/sales</td><td class=num>1,8</td><td class=num>2,4</td><td class=num>7,705</td><td class=num>9,807</td><td class=num>1,27x</td><td class=num>99,8</td><td class=num>101,7</td></tr><tr><td>POST /base64</td><td class=num>20,0</td><td class=num>20,0</td><td class=num>0,107</td><td class=num>0,146</td><td class=num>1,36x</td><td class=num>0,4</td><td class=num>0,4</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>20,1</td><td class=num>20,1</td><td class=num>0,181</td><td class=num>0,763</td><td class=num>4,21x</td><td class=num>0,3</td><td class=num>0,4</td></tr></tbody></table></div><p class='muted'>CPU süresi, konteynerin cgroup sayacından (<code>cpu.stat</code> &gt; <code>usage_usec</code>) okunur: yük süresince çekirdeklerde harcanan toplam kullanıcı + çekirdek süresi (saniye). “ms/istek” bu süreyi tamamlanan istek sayısına böler: aynı işi yapmak için ne kadar CPU harcandığını, kotaya ve throughput'a bağlı olmadan gösterir. Süre, fazın başında ve sonunda iki okumanın farkıdır; arada birkaç saniyelik boşta kalma payı vardır (ihmal edilebilir).</p>
+<h3>Veri bekleme süresi ve uygulama içi süre</h3><div class='chart'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>İstek başına veri bekleme süresi (ms, düşük iyi)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Sunucunun ölçtüğü: veri deposuna gönderilmesinden sonuçların okunup çözülmesine kadar</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='1.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='157.5' y='94' font-size='11' fill='#333333'>0,000 ms</text>
+<rect x='150' y='101' width='1.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='157.5' y='113' font-size='11' fill='#333333'>0,000 ms</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='338.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='494.5' y='142' font-size='11' fill='#333333'>16,904 ms</text>
+<rect x='150' y='149' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='161' font-size='11' fill='#333333'>27,964 ms</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='460.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='616.6' y='190' font-size='11' fill='#333333'>6,062 ms</text>
+<rect x='150' y='197' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='209' font-size='11' fill='#333333'>7,371 ms</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='379.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='535.4' y='238' font-size='11' fill='#333333'>7,936 ms</text>
+<rect x='150' y='245' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='257' font-size='11' fill='#333333'>11,715 ms</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='1.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='157.5' y='286' font-size='11' fill='#333333'>0,000 ms</text>
+<rect x='150' y='293' width='1.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='157.5' y='305' font-size='11' fill='#333333'>0,000 ms</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='441.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='597.8' y='334' font-size='11' fill='#333333'>6,539 ms</text>
+<rect x='150' y='341' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='353' font-size='11' fill='#333333'>8,288 ms</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='382.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='538.8' y='382' font-size='11' fill='#333333'>6,452 ms</text>
+<rect x='150' y='389' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='401' font-size='11' fill='#333333'>9,439 ms</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='429.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='585.4' y='430' font-size='11' fill='#333333'>6,559 ms</text>
+<rect x='150' y='437' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='449' font-size='11' fill='#333333'>8,554 ms</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='329.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='485.6' y='478' font-size='11' fill='#333333'>5,999 ms</text>
+<rect x='150' y='485' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='497' font-size='11' fill='#333333'>10,191 ms</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='470.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='626.2' y='526' font-size='11' fill='#333333'>68,147 ms</text>
+<rect x='150' y='533' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='545' font-size='11' fill='#333333'>81,159 ms</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='574' font-size='11' fill='#333333'>6.370,551 ms</text>
+<rect x='150' y='581' width='559.7' height='15' rx='2' fill='#5a9e2f'/>
+<text x='715.7' y='593' font-size='11' fill='#333333'>6.367,237 ms</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='1.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='157.5' y='622' font-size='11' fill='#333333'>0,000 ms</text>
+<rect x='150' y='629' width='1.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='157.5' y='641' font-size='11' fill='#333333'>0,000 ms</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='1.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='157.5' y='670' font-size='11' fill='#333333'>0,000 ms</text>
+<rect x='150' y='677' width='1.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='157.5' y='689' font-size='11' fill='#333333'>0,000 ms</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Her satırda en uzun çubuk %100 genişliktir; gerçek değer çubuğun yanında.</text>
+</svg></div><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go veri ms</th><th class=num>Go uygulama ms</th><th class=num>Go veri %</th><th class=num>Spring veri ms</th><th class=num>Spring uygulama ms</th><th class=num>Spring veri %</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>0,000</td><td class=num>0,006</td><td class=num>0</td><td class=num>0,000</td><td class=num>0,026</td><td class=num>0</td></tr><tr><td>GET /items</td><td class=num>16,904</td><td class=num>0,011</td><td class=num>100</td><td class=num>27,964</td><td class=num>0,041</td><td class=num>100</td></tr><tr><td>GET /items/{id}</td><td class=num>6,062</td><td class=num>0,009</td><td class=num>100</td><td class=num>7,371</td><td class=num>0,051</td><td class=num>99</td></tr><tr><td>GET /items/search</td><td class=num>7,936</td><td class=num>0,010</td><td class=num>100</td><td class=num>11,715</td><td class=num>0,075</td><td class=num>99</td></tr><tr><td>GET /cpu</td><td class=num>0,000</td><td class=num>8,828</td><td class=num>0</td><td class=num>0,000</td><td class=num>50,399</td><td class=num>0</td></tr><tr><td>POST /orders</td><td class=num>6,539</td><td class=num>0,017</td><td class=num>100</td><td class=num>8,288</td><td class=num>0,090</td><td class=num>99</td></tr><tr><td>POST /items</td><td class=num>6,452</td><td class=num>0,021</td><td class=num>100</td><td class=num>9,439</td><td class=num>0,083</td><td class=num>99</td></tr><tr><td>PUT /items/{id}</td><td class=num>6,559</td><td class=num>0,019</td><td class=num>100</td><td class=num>8,554</td><td class=num>0,114</td><td class=num>99</td></tr><tr><td>DELETE /items/{id}</td><td class=num>5,999</td><td class=num>0,006</td><td class=num>100</td><td class=num>10,191</td><td class=num>0,999</td><td class=num>91</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>68,147</td><td class=num>1,407</td><td class=num>98</td><td class=num>81,159</td><td class=num>3,100</td><td class=num>96</td></tr><tr><td>GET /reports/sales</td><td class=num>6.370,551</td><td class=num>0,607</td><td class=num>100</td><td class=num>6.367,237</td><td class=num>4,152</td><td class=num>100</td></tr><tr><td>POST /base64</td><td class=num>0,000</td><td class=num>0,047</td><td class=num>0</td><td class=num>0,000</td><td class=num>0,069</td><td class=num>0</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>0,000</td><td class=num>0,275</td><td class=num>0</td><td class=num>0,000</td><td class=num>6,824</td><td class=num>0</td></tr></tbody></table></div><p class='muted'>Süreler uygulamanın <b>içinde</b> ölçülür ve yanıt başlığıyla (<code>Server-Timing</code>) iletilir; istek başına ortalama, ms. <b>Veri</b>: veri deposuna sorgu/komut gönderilmesinden sonuçların uygulamaya okunup nesnelere çevrilmesine kadar geçen süre (sürücü, ağ ve veri deposunda bekleme dahil; uygulamanın kendi mantığı dahil değil). <b>Uygulama</b>: isteğin işleyiciye girişinden yanıtın yazılmaya başlamasına kadar geçen toplam süre eksi veri süresi (ayrıştırma, toplama, rapor üretme; JSON gövdesinin yazılması ve HTTP çerçevesinin yanıt öncesi/sonrası işleri dahil değil). <b>Veri %</b>: sunucu süresinin ne kadarının veriyi beklemekle geçtiği. Yük altında (64 eşzamanlı istek) bu süreler boşta ölçüme göre uzun çıkar: veri deposundaki ya da bağlantı havuzundaki kuyruk da beklemeye dahildir. Her iki dilin işleyicilerine aynı yerlerden ölçüm konmuştur. <code>POST /orders</code>'ta Spring tarafında transaction elle yönetilir (başlatma, iki sorgu ve commit tek veri bloğu); Go'da da aynı kapsamdadır.</p>
+<h3>CPU başına throughput</h3><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go rps / %CPU</th><th class=num>Spring rps / %CPU</th><th class=num>Go avantajı</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>142,7</td><td class=num>99,5</td><td class=num>1,43x</td></tr><tr><td>GET /items</td><td class=num>31,7</td><td class=num>19,8</td><td class=num>1,60x</td></tr><tr><td>GET /items/{id}</td><td class=num>84,6</td><td class=num>43,3</td><td class=num>1,96x</td></tr><tr><td>GET /items/search</td><td class=num>65,2</td><td class=num>35,0</td><td class=num>1,86x</td></tr><tr><td>GET /cpu</td><td class=num>5,0</td><td class=num>3,9</td><td class=num>1,29x</td></tr><tr><td>POST /orders</td><td class=num>81,0</td><td class=num>40,2</td><td class=num>2,01x</td></tr><tr><td>POST /items</td><td class=num>79,2</td><td class=num>37,9</td><td class=num>2,09x</td></tr><tr><td>PUT /items/{id}</td><td class=num>79,5</td><td class=num>38,6</td><td class=num>2,06x</td></tr><tr><td>DELETE /items/{id}</td><td class=num>85,6</td><td class=num>30,0</td><td class=num>2,86x</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>8,6</td><td class=num>6,1</td><td class=num>1,40x</td></tr><tr><td>GET /reports/sales</td><td class=num>1,3</td><td class=num>1,0</td><td class=num>1,34x</td></tr><tr><td>POST /base64</td><td class=num>97,9</td><td class=num>71,4</td><td class=num>1,37x</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>58,4</td><td class=num>13,9</td><td class=num>4,22x</td></tr></tbody></table></div>
+<p class="muted">CPU değeri docker stats'tan gelir: %100 = bir çekirdek, bu testte üst sınır %100.</p>
+
+<h2>Başlangıç, imaj ve build süresi</h2><div class=tw><table><thead><tr><th>Metrik</th><th class=num>Go</th><th class=num>Spring Boot</th></tr></thead><tbody><tr><td>Soğuk başlangıç (konteyner → /health 200; /health veri deposuna dokunmaz), sn</td><td class=num>0,62</td><td class=num>6,90</td></tr><tr><td>Spring'in kendi bildirdiği açılış süresi, sn</td><td class=num>-</td><td class=num>-</td></tr><tr><td>İlk istek gecikmesi, ms</td><td class=num>2</td><td class=num>81</td></tr><tr><td>İkinci istek gecikmesi, ms</td><td class=num>1,8</td><td class=num>4,1</td></tr><tr><td>Boşta bellek, MiB</td><td class=num>2</td><td class=num>138</td></tr><tr><td>Isınma sonrası bellek, MiB</td><td class=num>15</td><td class=num>650</td></tr><tr><td>Test boyunca en yüksek bellek, MiB</td><td class=num>57</td><td class=num>683</td></tr><tr><td>İmaj boyutu, MB</td><td class=num>5</td><td class=num>146</td></tr></tbody></table></div><h3>Build süresi</h3><div class=tw><table><thead><tr><th>Build</th><th class=num>Go</th><th class=num>Spring Boot</th><th class=num>Spring / Go</th></tr></thead><tbody><tr><td>Temiz build (önbelleksiz, bağımlılık indirme dahil), sn ortanca</td><td class=num>24,2</td><td class=num>128,0</td><td class=num>5,3x</td></tr><tr><td>   en düşük–en yüksek, sn</td><td class=num>24,0–25,6</td><td class=num>122,4–144,1</td><td class=num></td></tr><tr><td>Artımlı build (yalnızca kod değişti), sn ortanca</td><td class=num>20,1</td><td class=num>7,2</td><td class=num>0,4x</td></tr><tr><td>   en düşük–en yüksek, sn</td><td class=num>19,8–20,7</td><td class=num>6,9–7,7</td><td class=num></td></tr></tbody></table></div><p class='muted'>Docker çok aşamalı build (derleme + çalışma imajı), 3 tekrar. Taban imajların indirilmesi dahil değil; temiz buildde Go modülleri ve Maven bağımlılıkları yeniden indirilir, bu yüzden ağ hızından etkilenir. Artımlı build, bağımlılık katmanları önbellekteyken yalnızca kodun değiştiği günlük geliştirme durumudur. Go'nun artımlı build'i ~20 sn'de kalır: Docker, Go derleme önbelleğini katmanlar arasında taşımadığı için pgx her seferinde yeniden derlenir (BuildKit cache mount ile çok düşmesi beklenir, ölçülmedi). Spring'de bağımlılık jar'ları katmanda hazır olduğundan yalnızca kendi kodu derlenir. Burada yalnızca Docker build'i ölçüldü; Docker dışı yerel derleme süresi ölçülmedi.</p>
+
+
+
+
+
+
+
+<h2>Sınırlılıklar</h2>
+<ul class="find"><li>Tek makine, tek koşu ortamı: sonuçlar bu makinenin işlemcisine, ısı/güç durumuna ve arka plan yüküne bağlıdır. Bu yüzden birden çok tur, dönüşümlü sırayla (Go→Spring, Spring→Go) koşulur; tur aralığı geniş çıkıyorsa makine sakin değildir.</li><li>Docker Desktop (Windows/macOS) bir sanal makine içinde çalışır; ağ ve disk gecikmesi ekler. Çıplak Linux'ta mutlak sayılar farklı olur. Karşılaştırma oranları, mutlak değerlerden daha güvenilirdir.</li><li>Yük üreteci (k6), veri deposu (PostgreSQL ya da Valkey) ve uygulamalar aynı makinede çalışır. CPU limitleri uygulamaya (senaryoya göre) ve veri deposuna (varsayılan 8) konur; k6 sınırsızdır. Makinenin çekirdeği azsa konteynerler birbirini etkiler.</li><li>Yük kapalı döngüdür (sabit 64 eşzamanlı kullanıcı, bekleme yok): sistem sürekli doygunluğa itilir. Gerçek trafik genelde açık döngüdür; doygunluk altındaki gecikmeler gerçek hayattan yüksektir.</li><li>Her endpoint kısa süre ölçülür (varsayılan 20 sn); CPU/RAM örnekleri saniyede ~1 kez alınır (docker stats). Çok kısa tepe değerleri kaçabilir.</li><li>Kod en basit, idiomatik haliyle yazıldı (Go: standart kütüphane + pgx ya da go-redis; Spring: MVC + JdbcClient + Hikari ya da Jedis). JIT ayarı, GC ayarı, sanal iş parçacığı, native image (GraalVM) ya da Go'da GOGC/GOMEMLIMIT ayarı denenmedi; bunlar sonuçları değiştirebilir.</li><li>Bu bir CRUD API testidir. Uzun süre çalışan sistemlerde bellek sızıntısı, GC davranışı, ekip üretkenliği, kütüphane ekosistemi ve bakım maliyeti ölçülmedi.</li></ul>
+
+<h2>Hata oranı ve tur farkı</h2><div class=tw><table><thead><tr><th>Endpoint</th><th class=num>Go hata %</th><th class=num>Spring hata %</th><th class=num>Go rps (min–maks tur)</th><th class=num>Spring rps (min–maks tur)</th></tr></thead><tbody><tr><td>GET /health</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>12.230–14.409</td><td class=num>8.713–9.760</td></tr><tr><td>GET /items</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>2.767–3.138</td><td class=num>1.870–1.936</td></tr><tr><td>GET /items/{id}</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>7.105–8.227</td><td class=num>3.991–4.160</td></tr><tr><td>GET /items/search</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>5.740–6.176</td><td class=num>2.938–3.374</td></tr><tr><td>GET /cpu</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>444–476</td><td class=num>353–378</td></tr><tr><td>POST /orders</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>6.714–7.768</td><td class=num>3.563–3.923</td></tr><tr><td>POST /items</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>7.095–7.643</td><td class=num>3.367–3.744</td></tr><tr><td>PUT /items/{id}</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>6.267–7.555</td><td class=num>3.431–3.759</td></tr><tr><td>DELETE /items/{id}</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>7.476–8.050</td><td class=num>2.713–3.482</td></tr><tr><td>GET /stores/{id}/sales-report</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>751–813</td><td class=num>542–584</td></tr><tr><td>GET /reports/sales</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>8–9</td><td class=num>7–9</td></tr><tr><td>POST /base64</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>8.849–9.393</td><td class=num>5.914–7.047</td></tr><tr><td>GET /factorial?n=1000</td><td class=num>0,00</td><td class=num>0,00</td><td class=num>5.368–5.568</td><td class=num>1.271–1.360</td></tr></tbody></table></div>
+
+<h2>Yeniden üretme</h2>
+<pre><code>git clone &lt;repo&gt; &amp;&amp; cd go-vs-spring-bench
+docker compose run --rm runner            # tam koşu (build + ölçüm + rapor) -> results/report.html
+docker compose run --rm runner --quick    # kısa deneme koşusu</code></pre>
+<footer>Ham ölçümler: raw/ · Özet: summary.json · Kaynak kod: bu depo</footer>
+</div></body></html>

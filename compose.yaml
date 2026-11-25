@@ -1,0 +1,100 @@
+# Go vs Spring Boot karşılaştırması - tüm bileşenler Docker'da.
+# Her uygulama kaynak limitleriyle çalışır (APP_CPUS / APP_MEM; varsayılan 2 CPU, 2 GiB); testler sırayla yapılır (aynı anda yalnızca biri açık).
+name: gobench
+
+services:
+  db:
+    build: ./db
+    image: bench-db:latest
+    container_name: bench-db
+    environment:
+      POSTGRES_PASSWORD: bench
+    # Senaryo B: güçlendirilmiş veritabanı (senaryo A: 4 CPU, 2 GiB, shared_buffers=512MB).
+    # fsync/full_page_writes kapalı + synchronous_commit=off: disk ve WAL maliyetini ortadan kaldırır.
+    # YALNIZCA BENCHMARK İÇİN - üretimde veri kaybı riski taşır. İki yığına da aynı uygulanır.
+    command: >
+      postgres
+      -c shared_buffers=1GB
+      -c effective_cache_size=3GB
+      -c work_mem=32MB
+      -c maintenance_work_mem=256MB
+      -c max_connections=100
+      -c synchronous_commit=off
+      -c fsync=off
+      -c full_page_writes=off
+      -c wal_buffers=64MB
+      -c max_wal_size=4GB
+      -c min_wal_size=1GB
+      -c checkpoint_timeout=30min
+      -c checkpoint_completion_target=0.9
+      -c random_page_cost=1.1
+      -c jit=off
+      -c max_worker_processes=16
+      -c max_parallel_workers=8
+      -c max_parallel_workers_per_gather=4
+    # DB_CPUS: runner, makinenin CPU sayısı 8'den azsa otomatik düşürür (Docker, makinede olmayan CPU'yu kabul etmez).
+    cpus: ${DB_CPUS:-8}
+    mem_limit: 4g
+    shm_size: 2g
+    healthcheck:
+      # -h 127.0.0.1: init sırasındaki geçici sunucu yalnızca socket dinler, böylece init bitmeden "sağlıklı" görünmez.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+
+  # Bellek içi veri deposu senaryosu (STORE=valkey): PostgreSQL yerine Valkey (Redis'in açık kaynak çatalı).
+  # Kalıcılık kapalı (YALNIZCA BENCHMARK İÇİN). io-threads 4: ağ G/Ç'sini dağıtır, komutlar yine tek iş parçacığında yürür.
+  # Kaynak limiti PostgreSQL ile aynı (DB_CPUS / 4 GiB): darboğaz veri deposu olmasın.
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: bench-valkey
+    command: valkey-server --save "" --appendonly no --io-threads 4 --maxmemory 0
+    cpus: ${DB_CPUS:-8}
+    mem_limit: 4g
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  go-api:
+    build: ./go-api
+    image: bench-go-api:latest
+    container_name: bench-go
+    cpus: ${APP_CPUS:-2}
+    mem_limit: ${APP_MEM:-2g}
+    environment:
+      DATABASE_URL: postgres://postgres:bench@bench-db:5432/bench
+      STORE: ${STORE:-postgres}           # postgres | valkey
+      VALKEY_ADDR: bench-valkey:6379
+    profiles: ["go"]
+
+  spring-api:
+    build: ./spring-api
+    image: bench-spring-api:latest
+    container_name: bench-spring
+    cpus: ${APP_CPUS:-2}
+    mem_limit: ${APP_MEM:-2g}
+    environment:
+      DB_URL: jdbc:postgresql://bench-db:5432/bench
+      SPRING_PROFILES_ACTIVE: ${STORE:-postgres}   # postgres | valkey
+      VALKEY_HOST: bench-valkey
+    profiles: ["spring"]
+
+  # Orkestratör: docker compose run --rm runner
+  # Docker soketi üzerinden diğer konteynerleri yönetir; depo /work altına bağlanır (sonuçlar ./results'a yazılır).
+  runner:
+    build: ./runner
+    image: bench-runner:latest
+    profiles: ["runner"]
+    working_dir: /work
+    volumes:
+      - .:/work
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DB_CPUS: ${DB_CPUS:-}
+      STORE: ${STORE:-}
+      BENCH_POWER_NOTE: ${BENCH_POWER_NOTE:-}
+      APP_CPUS: ${APP_CPUS:-}
+      APP_MEM: ${APP_MEM:-}

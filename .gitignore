@@ -1,0 +1,5 @@
+# yeni koşuların çıktısı (referans ölçüm reference/ klasöründe)
+results/
+__pycache__/
+*.pyc
+spring-api/target/

@@ -1,0 +1,10 @@
+{
+  "name": "Valkey · 1 CPU / 1 GiB",
+  "short": "valkey-1cpu-1g",
+  "store": "valkey",
+  "db": "8 CPU, 4 GiB, bellek içi, kalıcılık kapalı (save \"\", appendonly no), io-threads 4; komutlar tek iş parçacığında yürür, yazmalar Lua betiğiyle tek turda",
+  "hardware": "Docker sunucusu: Docker Desktop (containerized) (linux/x86_64), Docker 29.5.2; Docker'ın görebildiği kaynak: 16 CPU, 7.4 GiB RAM",
+  "app_cpus": 1.0,
+  "app_mem": "1 GiB",
+  "app_mem_mib": 1024
+}

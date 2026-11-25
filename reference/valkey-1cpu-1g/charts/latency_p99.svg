@@ -1,0 +1,75 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>p99 gecikme (ms, düşük iyi)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Aynı yük altında istek gecikmesinin 99. yüzdeliği</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='380.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='536.7' y='94' font-size='11' fill='#333333'>54,8 ms · ort. 4,5 ms</text>
+<rect x='150' y='101' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='113' font-size='11' fill='#333333'>80,6 ms · ort. 6,6 ms</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='378.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='534.2' y='142' font-size='11' fill='#333333'>72,1 ms · ort. 21,2 ms</text>
+<rect x='150' y='149' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='161' font-size='11' fill='#333333'>106,8 ms · ort. 33,0 ms</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='355.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='511.1' y='190' font-size='11' fill='#333333'>57,7 ms · ort. 7,8 ms</text>
+<rect x='150' y='197' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='209' font-size='11' fill='#333333'>91,0 ms · ort. 15,2 ms</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='356.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='512.4' y='238' font-size='11' fill='#333333'>61,1 ms · ort. 10,3 ms</text>
+<rect x='150' y='245' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='257' font-size='11' fill='#333333'>95,9 ms · ort. 18,8 ms</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='420.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='576.7' y='286' font-size='11' fill='#333333'>300,1 ms · ort. 135,4 ms</text>
+<rect x='150' y='293' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='305' font-size='11' fill='#333333'>399,4 ms · ort. 175,2 ms</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='348.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='504.4' y='334' font-size='11' fill='#333333'>57,5 ms · ort. 8,3 ms</text>
+<rect x='150' y='341' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='353' font-size='11' fill='#333333'>92,5 ms · ort. 16,4 ms</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='343.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='499.6' y='382' font-size='11' fill='#333333'>57,0 ms · ort. 8,3 ms</text>
+<rect x='150' y='389' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='401' font-size='11' fill='#333333'>92,9 ms · ort. 17,4 ms</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='345.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='501.1' y='430' font-size='11' fill='#333333'>57,6 ms · ort. 8,4 ms</text>
+<rect x='150' y='437' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='449' font-size='11' fill='#333333'>93,4 ms · ort. 17,2 ms</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='312.4' height='15' rx='2' fill='#0a8fb3'/>
+<text x='468.4' y='478' font-size='11' fill='#333333'>55,3 ms · ort. 7,8 ms</text>
+<rect x='150' y='485' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='497' font-size='11' fill='#333333'>99,0 ms · ort. 21,8 ms</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='195.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='351.5' y='526' font-size='11' fill='#333333'>162,6 ms · ort. 79,1 ms</text>
+<rect x='150' y='533' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='545' font-size='11' fill='#333333'>465,9 ms · ort. 109,4 ms</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='400.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='556.8' y='574' font-size='11' fill='#333333'>9.323,4 ms · ort. 6.374,3 ms</text>
+<rect x='150' y='581' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='593' font-size='11' fill='#333333'>13.026,9 ms · ort. 6.373,4 ms</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='403.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='559.2' y='622' font-size='11' fill='#333333'>59,9 ms · ort. 6,7 ms</text>
+<rect x='150' y='629' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='641' font-size='11' fill='#333333'>83,2 ms · ort. 9,2 ms</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='352.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='508.7' y='670' font-size='11' fill='#333333'>65,6 ms · ort. 11,5 ms</text>
+<rect x='150' y='677' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='689' font-size='11' fill='#333333'>104,1 ms · ort. 48,7 ms</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Her satırda en uzun çubuk %100 genişliktir; gerçek değer çubuğun yanında.</text>
+</svg>

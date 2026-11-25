@@ -1,0 +1,75 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 758' width='960' height='758' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='758' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>Uygulama CPU kullanımı (% - 50 = limit dolu)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Yük süresince docker stats ortalaması</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='554.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='710.9' y='94' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='101' width='551.2' height='15' rx='2' fill='#5a9e2f'/>
+<text x='707.2' y='113' font-size='11' fill='#333333'>%48</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='554.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='710.8' y='142' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='149' width='550.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='706.0' y='161' font-size='11' fill='#333333'>%47</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='560.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='716.0' y='190' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='197' width='556.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='712.3' y='209' font-size='11' fill='#333333'>%48</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='547.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='703.3' y='238' font-size='11' fill='#333333'>%47</text>
+<rect x='150' y='245' width='553.6' height='15' rx='2' fill='#5a9e2f'/>
+<text x='709.6' y='257' font-size='11' fill='#333333'>%48</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='274' width='549.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='705.7' y='286' font-size='11' fill='#333333'>%47</text>
+<rect x='150' y='293' width='543.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='699.5' y='305' font-size='11' fill='#333333'>%47</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='322' width='556.7' height='15' rx='2' fill='#0a8fb3'/>
+<text x='712.7' y='334' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='341' width='550.8' height='15' rx='2' fill='#5a9e2f'/>
+<text x='706.8' y='353' font-size='11' fill='#333333'>%48</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='370' width='556.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='712.1' y='382' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='389' width='548.3' height='15' rx='2' fill='#5a9e2f'/>
+<text x='704.3' y='401' font-size='11' fill='#333333'>%47</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='418' width='557.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='713.0' y='430' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='437' width='548.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='704.5' y='449' font-size='11' fill='#333333'>%47</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='466' width='556.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='712.3' y='478' font-size='11' fill='#333333'>%48</text>
+<rect x='150' y='485' width='546.1' height='15' rx='2' fill='#5a9e2f'/>
+<text x='702.1' y='497' font-size='11' fill='#333333'>%47</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='514' width='544.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='700.5' y='526' font-size='11' fill='#333333'>%47</text>
+<rect x='150' y='533' width='552.8' height='15' rx='2' fill='#5a9e2f'/>
+<text x='708.8' y='545' font-size='11' fill='#333333'>%48</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='562' width='76.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='232.3' y='574' font-size='11' fill='#333333'>%7</text>
+<rect x='150' y='581' width='179.1' height='15' rx='2' fill='#5a9e2f'/>
+<text x='335.1' y='593' font-size='11' fill='#333333'>%15</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='610' width='548.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='704.9' y='622' font-size='11' fill='#333333'>%47</text>
+<rect x='150' y='629' width='551.1' height='15' rx='2' fill='#5a9e2f'/>
+<text x='707.1' y='641' font-size='11' fill='#333333'>%48</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='658' width='542.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='698.9' y='670' font-size='11' fill='#333333'>%47</text>
+<rect x='150' y='677' width='542.5' height='15' rx='2' fill='#5a9e2f'/>
+<text x='698.5' y='689' font-size='11' fill='#333333'>%47</text>
+<rect x='150' y='724' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='734' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='724' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='734' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='734' font-size='11' text-anchor='end' fill='#777777'>Tüm satırlar aynı ölçekte.</text>
+</svg>

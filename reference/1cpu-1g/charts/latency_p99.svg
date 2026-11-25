@@ -1,0 +1,80 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 806' width='960' height='806' font-family='Segoe UI, Arial, sans-serif'>
+<rect width='960' height='806' fill='#ffffff'/>
+<text x='20' y='30' font-size='17' font-weight='600' fill='#1a1a1a'>p99 gecikme (ms, düşük iyi)</text>
+<text x='20' y='50' font-size='12' fill='#666666'>Aynı yük altında istek gecikmesinin 99. yüzdeliği</text>
+<text x='140' y='100' font-size='12' text-anchor='end' fill='#333333'>GET /health</text>
+<rect x='150' y='82' width='383.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='539.1' y='94' font-size='11' fill='#333333'>55,5 ms · ort. 4,6 ms</text>
+<rect x='150' y='101' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='113' font-size='11' fill='#333333'>81,2 ms · ort. 6,8 ms</text>
+<text x='140' y='148' font-size='12' text-anchor='end' fill='#333333'>GET /items</text>
+<rect x='150' y='130' width='406.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='562.9' y='142' font-size='11' fill='#333333'>65,2 ms · ort. 16,1 ms</text>
+<rect x='150' y='149' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='161' font-size='11' fill='#333333'>89,8 ms · ort. 17,8 ms</text>
+<text x='140' y='196' font-size='12' text-anchor='end' fill='#333333'>GET /items/{id}</text>
+<rect x='150' y='178' width='384.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='540.3' y='190' font-size='11' fill='#333333'>60,1 ms · ort. 10,0 ms</text>
+<rect x='150' y='197' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='209' font-size='11' fill='#333333'>87,6 ms · ort. 14,0 ms</text>
+<text x='140' y='244' font-size='12' text-anchor='end' fill='#333333'>GET /items/search</text>
+<rect x='150' y='226' width='389.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='545.2' y='238' font-size='11' fill='#333333'>60,4 ms · ort. 10,9 ms</text>
+<rect x='150' y='245' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='257' font-size='11' fill='#333333'>86,9 ms · ort. 15,4 ms</text>
+<text x='140' y='292' font-size='12' text-anchor='end' fill='#333333'>GET /stats</text>
+<rect x='150' y='274' width='404.1' height='15' rx='2' fill='#0a8fb3'/>
+<text x='560.1' y='286' font-size='11' fill='#333333'>386,8 ms · ort. 267,4 ms</text>
+<rect x='150' y='293' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='305' font-size='11' fill='#333333'>536,1 ms · ort. 265,7 ms</text>
+<text x='140' y='340' font-size='12' text-anchor='end' fill='#333333'>GET /cpu</text>
+<rect x='150' y='322' width='420.8' height='15' rx='2' fill='#0a8fb3'/>
+<text x='576.8' y='334' font-size='11' fill='#333333'>299,8 ms · ort. 136,7 ms</text>
+<rect x='150' y='341' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='353' font-size='11' fill='#333333'>399,0 ms · ort. 171,2 ms</text>
+<text x='140' y='388' font-size='12' text-anchor='end' fill='#333333'>POST /orders</text>
+<rect x='150' y='370' width='407.0' height='15' rx='2' fill='#0a8fb3'/>
+<text x='563.0' y='382' font-size='11' fill='#333333'>70,3 ms · ort. 24,0 ms</text>
+<rect x='150' y='389' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='401' font-size='11' fill='#333333'>96,7 ms · ort. 28,0 ms</text>
+<text x='140' y='436' font-size='12' text-anchor='end' fill='#333333'>POST /items</text>
+<rect x='150' y='418' width='382.9' height='15' rx='2' fill='#0a8fb3'/>
+<text x='538.9' y='430' font-size='11' fill='#333333'>61,4 ms · ort. 11,2 ms</text>
+<rect x='150' y='437' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='449' font-size='11' fill='#333333'>89,9 ms · ort. 17,4 ms</text>
+<text x='140' y='484' font-size='12' text-anchor='end' fill='#333333'>PUT /items/{id}</text>
+<rect x='150' y='466' width='383.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='539.6' y='478' font-size='11' fill='#333333'>60,4 ms · ort. 10,8 ms</text>
+<rect x='150' y='485' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='497' font-size='11' fill='#333333'>88,2 ms · ort. 16,2 ms</text>
+<text x='140' y='532' font-size='12' text-anchor='end' fill='#333333'>DELETE /items/{id}</text>
+<rect x='150' y='514' width='364.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='520.6' y='526' font-size='11' fill='#333333'>59,7 ms · ort. 9,7 ms</text>
+<rect x='150' y='533' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='545' font-size='11' fill='#333333'>91,7 ms · ort. 18,5 ms</text>
+<text x='140' y='580' font-size='12' text-anchor='end' fill='#333333'>GET /stores/{id}/sales-report</text>
+<rect x='150' y='562' width='366.2' height='15' rx='2' fill='#0a8fb3'/>
+<text x='522.2' y='574' font-size='11' fill='#333333'>194,7 ms · ort. 106,6 ms</text>
+<rect x='150' y='581' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='593' font-size='11' fill='#333333'>297,8 ms · ort. 118,5 ms</text>
+<text x='140' y='628' font-size='12' text-anchor='end' fill='#333333'>GET /reports/sales</text>
+<rect x='150' y='610' width='237.5' height='15' rx='2' fill='#0a8fb3'/>
+<text x='393.5' y='622' font-size='11' fill='#333333'>2.666,5 ms · ort. 2.009,6 ms</text>
+<rect x='150' y='629' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='641' font-size='11' fill='#333333'>6.288,0 ms · ort. 2.145,0 ms</text>
+<text x='140' y='676' font-size='12' text-anchor='end' fill='#333333'>POST /base64</text>
+<rect x='150' y='658' width='408.6' height='15' rx='2' fill='#0a8fb3'/>
+<text x='564.6' y='670' font-size='11' fill='#333333'>60,0 ms · ort. 7,3 ms</text>
+<rect x='150' y='677' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='689' font-size='11' fill='#333333'>82,2 ms · ort. 8,9 ms</text>
+<text x='140' y='724' font-size='12' text-anchor='end' fill='#333333'>GET /factorial?n=1000</text>
+<rect x='150' y='706' width='200.3' height='15' rx='2' fill='#0a8fb3'/>
+<text x='356.3' y='718' font-size='11' fill='#333333'>67,0 ms · ort. 12,6 ms</text>
+<rect x='150' y='725' width='560.0' height='15' rx='2' fill='#5a9e2f'/>
+<text x='716.0' y='737' font-size='11' fill='#333333'>187,2 ms · ort. 52,6 ms</text>
+<rect x='150' y='772' width='12' height='12' rx='2' fill='#0a8fb3'/>
+<text x='168' y='782' font-size='12' fill='#333333'>Go</text>
+<rect x='280' y='772' width='12' height='12' rx='2' fill='#5a9e2f'/>
+<text x='298' y='782' font-size='12' fill='#333333'>Spring Boot</text>
+<text x='940' y='782' font-size='11' text-anchor='end' fill='#777777'>Her satırda en uzun çubuk %100 genişliktir; gerçek değer çubuğun yanında.</text>
+</svg>
